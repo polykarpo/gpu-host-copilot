@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="전기료와 가동 시간을 반영해 GPU 호스팅 순이익을 계산하는 로컬 계산기">
+  <title>GPU Host Copilot 무료 계산기</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <header class="hero">
+    <p class="badge">GPU Host Copilot · 무료 계산기</p>
+    <h1>전기료와 쉬는 시간을 빼면<br>실제로 얼마가 남을까요?</h1>
+    <p class="intro">GPU 호스팅 매출에서 전력 비용을 빼고, 관찰을 계속할 만한 마진인지 보수적으로 확인합니다.</p>
+    <p class="trust">가입도 업로드도 없습니다. 입력값은 이 탭을 닫으면 사라집니다.</p>
+  </header>
+
+  <main>
+    <section class="sheet input-sheet" aria-labelledby="input-title">
+      <div class="sheet-heading">
+        <p class="eyebrow">01 · 입력</p>
+        <div>
+          <h2 id="input-title">내 운영 조건</h2>
+          <p><strong>합성 예시 값</strong>이 들어 있습니다. 실제 관찰값으로 바꿔 주세요.</p>
+        </div>
+      </div>
+
+      <form id="calculator" novalidate>
+        <div class="field">
+          <label for="observationDays">관찰 기간 <span>일</span></label>
+          <input id="observationDays" name="observationDays" type="number" min="0" step="1" value="7" inputmode="decimal" aria-describedby="observationDays-help observationDays-error" required>
+          <p class="help" id="observationDays-help">같은 조건으로 기록한 기간</p>
+          <p class="error" id="observationDays-error"></p>
+        </div>
+        <div class="field">
+          <label for="grossRevenue">총 매출 <span>원</span></label>
+          <input id="grossRevenue" name="grossRevenue" type="number" min="0" step="1" value="50000" inputmode="decimal" aria-describedby="grossRevenue-help grossRevenue-error" required>
+          <p class="help" id="grossRevenue-help">관찰 기간에 발생한 세전 총액</p>
+          <p class="error" id="grossRevenue-error"></p>
+        </div>
+        <div class="field">
+          <label for="averagePowerW">평균 전력 <span>W</span></label>
+          <input id="averagePowerW" name="averagePowerW" type="number" min="0" step="1" value="300" inputmode="decimal" aria-describedby="averagePowerW-help averagePowerW-error" required>
+          <p class="help" id="averagePowerW-help">가능하면 콘센트 기준 시스템 전체 전력을 쓰세요. GPU 전력만 쓰면 비용이 낮게 계산됩니다.</p>
+          <p class="error" id="averagePowerW-error"></p>
+        </div>
+        <div class="field">
+          <label for="workloadHoursPerDay">하루 실제 가동 <span>시간</span></label>
+          <input id="workloadHoursPerDay" name="workloadHoursPerDay" type="number" min="0" max="24" step="0.1" value="20" inputmode="decimal" aria-describedby="workloadHoursPerDay-help workloadHoursPerDay-error" required>
+          <p class="help" id="workloadHoursPerDay-help">작업이 실제로 실행된 하루 평균 시간</p>
+          <p class="error" id="workloadHoursPerDay-error"></p>
+        </div>
+        <div class="field">
+          <label for="electricityPricePerKwh">전기 단가 <span>원/kWh</span></label>
+          <input id="electricityPricePerKwh" name="electricityPricePerKwh" type="number" min="0" step="0.1" value="180" inputmode="decimal" aria-describedby="electricityPricePerKwh-help electricityPricePerKwh-error" required>
+          <p class="help" id="electricityPricePerKwh-help">고지서 기준의 실제 적용 단가 권장</p>
+          <p class="error" id="electricityPricePerKwh-error"></p>
+        </div>
+        <button type="submit">실제 순이익 계산하기</button>
+      </form>
+    </section>
+
+    <section class="sheet result-sheet" id="results" role="status" aria-live="polite" aria-atomic="true" aria-labelledby="result-title">
+      <div class="sheet-heading">
+        <p class="eyebrow">02 · 결과</p>
+        <div>
+          <h2 id="result-title">아직 계산하지 않았습니다</h2>
+          <p id="decision-note">실제 관찰값을 확인한 뒤 계산해 주세요.</p>
+        </div>
+      </div>
+      <dl class="result-list" hidden>
+        <div class="primary-result"><dt>순이익</dt><dd id="netProfit">—</dd></div>
+        <div><dt>전기료</dt><dd id="energyCost">—</dd></div>
+        <div><dt>전력 사용량</dt><dd id="energyKwh">—</dd></div>
+        <div><dt>순마진</dt><dd id="marginPct">—</dd></div>
+        <div><dt>월간 순이익 환산</dt><dd id="monthlyNetProfit">—</dd></div>
+        <div><dt>손익분기 총매출</dt><dd id="breakEvenGross">—</dd></div>
+      </dl>
+    </section>
+
+    <section class="limits" aria-labelledby="limits-title">
+      <p class="eyebrow">알아둘 점</p>
+      <h2 id="limits-title">판단에 포함되지 않은 비용이 있습니다.</h2>
+      <p>이 계산은 입력한 작업 시간의 전력 비용만 반영합니다. 하드웨어 감가상각, 세금, 냉각·대기 전력, 환전 수수료는 포함하지 않습니다. 월간 값은 같은 조건이 30일 이어진다는 단순 환산이며 예측이 아닙니다.</p>
+      <p><a href="./sample-report.html">합성 주간 보고서 예시 보기</a></p>
+    </section>
+
+    <section class="references" id="references" aria-labelledby="references-title">
+      <p class="eyebrow">참고 자료와 독립성</p>
+      <h2 id="references-title">작업 배정은 계산기로 예측할 수 없습니다.</h2>
+      <p>이 서비스는 Salad Technologies와 무관하게 독립적으로 만든 비제휴 도구입니다. 특정 업체의 수익이나 작업 배정을 보장하지 않습니다. 호스팅 업체마다 수요와 자격 조건이 달라질 수 있습니다.</p>
+      <ul>
+        <li><a href="https://support.salad.com/faq/jobs/why-am-i-not-receiving-any-jobs/" rel="noreferrer">작업 가용성 안내 — Salad 지원 문서</a></li>
+        <li><a href="https://salad.com/terms/chefs" rel="noreferrer">Chef 이용 조건 — Salad</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>GPU Host Copilot · 로컬 우선 순이익 계산기 · <a href="./privacy.html">개인정보 안내</a></footer>
+</body>
+</html>

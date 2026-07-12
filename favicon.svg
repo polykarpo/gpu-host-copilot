@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GPU Host Copilot">
+  <rect width="64" height="64" rx="14" fill="#35533a"/>
+  <path d="M18 20h28v24H18z" fill="none" stroke="#fff" stroke-width="4"/>
+  <path d="M25 27h14v10H25zM12 26h6m-6 12h6m28-12h6m-6 12h6" fill="none" stroke="#fff" stroke-width="3"/>
+</svg>
